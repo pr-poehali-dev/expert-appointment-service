@@ -1,30 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { api, Specialist } from "@/lib/api";
 import Icon from "@/components/ui/icon";
 
 type Mode = "login" | "register";
 
-interface AuthPageProps {
-  defaultMode?: Mode;
-}
+const DEMO_CLIENTS = [
+  { full_name: "Иванова Мария Сергеевна", email: "ivanova@demo.ru", phone: "+7 999 111-22-33" },
+  { full_name: "Петров Алексей Иванович", email: "petrov@demo.ru", phone: "+7 999 444-55-66" },
+  { full_name: "Сидорова Елена Павловна", email: "sidorova@demo.ru", phone: "+7 999 777-88-99" },
+];
 
-export default function AuthPage({ defaultMode = "login" }: AuthPageProps) {
+const DEMO_PASSWORD = "demo123";
+
+export default function AuthPage() {
   const { login, register } = useAuth();
-  const [mode, setMode] = useState<Mode>(defaultMode);
+  const [mode, setMode] = useState<Mode>("login");
   const [role, setRole] = useState<"client" | "doctor">("client");
-  const [specialists, setSpecialists] = useState<Specialist[]>([]);
-  const [form, setForm] = useState({ email: "", password: "", full_name: "", phone: "", specialist_id: "" });
+  const [form, setForm] = useState({ email: "", password: "", full_name: "", phone: "" });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
-
-  useEffect(() => {
-    if (mode === "register" && role === "doctor") {
-      api.getSpecialists().then(setSpecialists);
-    }
-  }, [mode, role]);
+  const [showDemo, setShowDemo] = useState(false);
 
   const set = (k: string, v: string) => { setForm(f => ({ ...f, [k]: v })); setErr(""); };
+
+  const fillDemo = (client: typeof DEMO_CLIENTS[0]) => {
+    setForm({ full_name: client.full_name, email: client.email, phone: client.phone, password: DEMO_PASSWORD });
+    setShowDemo(false);
+    setErr("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +45,6 @@ export default function AuthPage({ defaultMode = "login" }: AuthPageProps) {
         full_name: form.full_name,
         phone: form.phone || undefined,
         role,
-        specialist_id: role === "doctor" && form.specialist_id ? Number(form.specialist_id) : undefined,
       });
     }
 
@@ -66,7 +68,7 @@ export default function AuthPage({ defaultMode = "login" }: AuthPageProps) {
           {/* Tabs */}
           <div className="flex gap-1 p-1 bg-muted rounded-xl mb-6">
             {(["login", "register"] as Mode[]).map(m => (
-              <button key={m} onClick={() => { setMode(m); setErr(""); }}
+              <button key={m} onClick={() => { setMode(m); setErr(""); setShowDemo(false); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200
                   ${mode === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                 {m === "login" ? "Вход" : "Регистрация"}
@@ -82,7 +84,7 @@ export default function AuthPage({ defaultMode = "login" }: AuthPageProps) {
                 <p className="text-sm text-muted-foreground mb-2">Я регистрируюсь как</p>
                 <div className="flex gap-2">
                   {[{ v: "client", label: "Пациент", icon: "User" }, { v: "doctor", label: "Врач", icon: "Stethoscope" }].map(r => (
-                    <button key={r.v} type="button" onClick={() => setRole(r.v as "client" | "doctor")}
+                    <button key={r.v} type="button" onClick={() => { setRole(r.v as "client" | "doctor"); setShowDemo(false); }}
                       className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-all duration-200
                         ${role === r.v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
                       <Icon name={r.icon as "User"} size={14} />
@@ -90,6 +92,31 @@ export default function AuthPage({ defaultMode = "login" }: AuthPageProps) {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Demo autofill (client register only) */}
+            {mode === "register" && role === "client" && (
+              <div className="relative">
+                <button type="button" onClick={() => setShowDemo(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-dashed border-primary/30 text-sm text-primary hover:bg-primary/5 transition-all">
+                  <span className="flex items-center gap-2">
+                    <Icon name="Zap" size={14} />
+                    Заполнить тестовыми данными
+                  </span>
+                  <Icon name={showDemo ? "ChevronUp" : "ChevronDown"} size={14} />
+                </button>
+                {showDemo && (
+                  <div className="absolute z-10 top-full left-0 right-0 mt-1 gradient-card border border-border rounded-xl shadow-xl overflow-hidden animate-scale-in">
+                    {DEMO_CLIENTS.map(c => (
+                      <button key={c.email} type="button" onClick={() => fillDemo(c)}
+                        className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border/50 last:border-0">
+                        <p className="text-sm font-medium">{c.full_name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{c.email} · пароль: {DEMO_PASSWORD}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -117,27 +144,13 @@ export default function AuthPage({ defaultMode = "login" }: AuthPageProps) {
                 className="w-full px-4 py-3 rounded-xl bg-muted border border-border focus:border-primary focus:outline-none text-sm placeholder:text-muted-foreground transition-colors" />
             </div>
 
-            {/* Phone (register only) */}
-            {mode === "register" && (
+            {/* Phone (register client only) */}
+            {mode === "register" && role === "client" && (
               <div>
                 <label className="text-sm text-muted-foreground mb-1.5 block">Телефон (необязательно)</label>
                 <input value={form.phone} onChange={e => set("phone", e.target.value)}
                   placeholder="+7 (999) 000-00-00"
                   className="w-full px-4 py-3 rounded-xl bg-muted border border-border focus:border-primary focus:outline-none text-sm placeholder:text-muted-foreground transition-colors" />
-              </div>
-            )}
-
-            {/* Specialist select for doctor */}
-            {mode === "register" && role === "doctor" && (
-              <div>
-                <label className="text-sm text-muted-foreground mb-1.5 block">Выберите вашего специалиста</label>
-                <select required value={form.specialist_id} onChange={e => set("specialist_id", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-muted border border-border focus:border-primary focus:outline-none text-sm transition-colors">
-                  <option value="">— выберите —</option>
-                  {specialists.map(s => (
-                    <option key={s.id} value={s.id}>{s.emoji} {s.name} · {s.specialty}</option>
-                  ))}
-                </select>
               </div>
             )}
 
