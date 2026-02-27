@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { api, Specialist, TimeSlot } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -19,6 +20,7 @@ function getNextDays(n: number) {
 }
 
 export default function BookingPage() {
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>(1);
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
   const [loadingSpecs, setLoadingSpecs] = useState(true);
@@ -27,7 +29,7 @@ export default function BookingPage() {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", comment: "" });
+  const [form, setForm] = useState({ name: user?.full_name ?? "", phone: user?.phone ?? "", comment: "" });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
