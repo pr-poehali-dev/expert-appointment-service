@@ -1,0 +1,37 @@
+{
+  "tests": [
+    {
+      "name": "GET /me без токена",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "Токен не передан"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST register без полей",
+      "method": "POST",
+      "path": "/?action=register",
+      "body": "{}",
+      "expectedStatus": 400,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST login неверные данные",
+      "method": "POST",
+      "path": "/?action=login",
+      "body": "{\"email\": \"nobody@test.com\", \"password\": \"wrong\"}",
+      "expectedStatus": 401,
+      "expectedBody": {"error": "Неверный email или пароль"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST неверный action",
+      "method": "POST",
+      "path": "/?action=unknown",
+      "body": "{}",
+      "expectedStatus": 400,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

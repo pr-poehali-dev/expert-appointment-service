@@ -1,47 +1,26 @@
-import { useState, useEffect } from "react";
-import Navigation from "@/components/Navigation";
-import HomePage from "@/pages/HomePage";
-import SchedulePage from "@/pages/SchedulePage";
-import BookingPage from "@/pages/BookingPage";
-import NotificationsPage from "@/pages/NotificationsPage";
-import { api } from "@/lib/api";
-
-type Page = "home" | "schedule" | "booking" | "notifications";
+import { useAuth } from "@/context/AuthContext";
+import AuthPage from "@/pages/AuthPage";
+import ClientPortal from "@/pages/ClientPortal";
+import AdminPanel from "@/pages/AdminPanel";
+import Icon from "@/components/ui/icon";
 
 export default function Index() {
-  const [page, setPage] = useState<Page>("home");
-  const [notifCount, setNotifCount] = useState(0);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    api.getNotifications().then((data) => setNotifCount(data.unread));
-  }, [page]);
-
-  const renderPage = () => {
-    switch (page) {
-      case "home": return <HomePage onBook={() => setPage("booking")} />;
-      case "schedule": return <SchedulePage />;
-      case "booking": return <BookingPage />;
-      case "notifications": return <NotificationsPage />;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-background font-golos">
-      <Navigation current={page} onChange={setPage} notifCount={notifCount} />
-      <main key={page} className="animate-fade-in">
-        {renderPage()}
-      </main>
-
-      <footer className="border-t border-border mt-16 py-8 px-6">
-        <div className="container max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-muted-foreground text-sm">© 2026 МедиКлиник. Все права защищены.</p>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <button className="hover:text-primary transition-colors">Политика конфиденциальности</button>
-            <button className="hover:text-primary transition-colors">Контакты</button>
-            <button className="hover:text-primary transition-colors">Поддержка</button>
+  if (loading) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center">
+        <div className="text-center animate-fade-in">
+          <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-xl">
+            <Icon name="Stethoscope" size={28} className="text-primary-foreground" />
           </div>
+          <p className="text-muted-foreground text-sm">Загрузка...</p>
         </div>
-      </footer>
-    </div>
-  );
+      </div>
+    );
+  }
+
+  if (!user) return <AuthPage />;
+  if (user.role === "doctor") return <AdminPanel />;
+  return <ClientPortal />;
 }
