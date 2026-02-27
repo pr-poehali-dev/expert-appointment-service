@@ -1,0 +1,1 @@
+CREATE TABLE t_p60955846_expert_appointment_s.schedules (id SERIAL PRIMARY KEY, specialist_id INTEGER REFERENCES t_p60955846_expert_appointment_s.specialists(id), work_date DATE NOT NULL, slot_time TIME NOT NULL, is_booked BOOLEAN DEFAULT FALSE, UNIQUE(specialist_id, work_date, slot_time));

@@ -1,0 +1,1 @@
+CREATE TABLE t_p60955846_expert_appointment_s.notifications (id SERIAL PRIMARY KEY, appointment_id INTEGER REFERENCES t_p60955846_expert_appointment_s.appointments(id), type VARCHAR(50) NOT NULL, title VARCHAR(200) NOT NULL, message TEXT NOT NULL, channel VARCHAR(50) DEFAULT 'email', is_read BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT NOW());

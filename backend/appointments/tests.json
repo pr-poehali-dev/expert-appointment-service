@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Записи на сегодня",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"appointments": []},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

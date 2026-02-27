@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Список уведомлений",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"notifications": [], "unread": 0},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

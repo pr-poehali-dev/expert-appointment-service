@@ -1,0 +1,1 @@
+CREATE TABLE t_p60955846_expert_appointment_s.specialists (id SERIAL PRIMARY KEY, name VARCHAR(200) NOT NULL, specialty VARCHAR(100) NOT NULL, experience_years INTEGER DEFAULT 0, rating NUMERIC(3,1) DEFAULT 5.0, reviews_count INTEGER DEFAULT 0, price INTEGER NOT NULL, emoji VARCHAR(10) DEFAULT '🩺', is_available BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT NOW());

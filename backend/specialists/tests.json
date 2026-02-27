@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Список специалистов",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"specialists": []},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

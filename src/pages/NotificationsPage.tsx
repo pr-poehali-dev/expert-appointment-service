@@ -1,33 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
-
-const notifications = [
-  {
-    id: 1, type: "reminder", title: "Напоминание о приёме", 
-    message: "Иванова М.С. — завтра в 09:30 у кардиолога Соколовой А.В.",
-    time: "2 часа назад", channel: "SMS + Email", read: false
-  },
-  {
-    id: 2, type: "confirm", title: "Запись подтверждена",
-    message: "Петров А.И. подтвердил запись на 25 февраля в 11:00.",
-    time: "5 часов назад", channel: "Email", read: false
-  },
-  {
-    id: 3, type: "cancel", title: "Отмена записи",
-    message: "Сидорова Е.П. отменила запись на 26 февраля в 14:00.",
-    time: "Вчера, 18:42", channel: "SMS", read: true
-  },
-  {
-    id: 4, type: "reminder", title: "Напоминание о приёме",
-    message: "Козлов Н.В. — сегодня в 15:00 у хирурга Волкова Д.С.",
-    time: "Вчера, 15:00", channel: "SMS + Email", read: true
-  },
-  {
-    id: 5, type: "confirm", title: "Новая запись",
-    message: "Морозова А.П. записалась на 28 февраля в 10:30 к терапевту.",
-    time: "2 дня назад", channel: "Email", read: true
-  },
-];
+import { api, Notification } from "@/lib/api";
 
 const templates = [
   { name: "Напоминание за день", active: true, channel: "SMS + Email", desc: "Отправляется за 24 часа до приёма" },
@@ -42,19 +15,49 @@ const typeIcons: Record<string, { icon: string; color: string }> = {
   cancel: { icon: "XCircle", color: "text-red-400" },
 };
 
+function formatTime(ts: string) {
+  try {
+    const d = new Date(ts);
+    const now = new Date();
+    const diff = (now.getTime() - d.getTime()) / 1000;
+    if (diff < 3600) return `${Math.floor(diff / 60)} мин. назад`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} ч. назад`;
+    return d.toLocaleDateString("ru", { day: "numeric", month: "short" });
+  } catch {
+    return ts;
+  }
+}
+
 export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState<"feed" | "settings">("feed");
-  const [notifs, setNotifs] = useState(notifications);
+  const [notifs, setNotifs] = useState<Notification[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [tmpl, setTmpl] = useState(templates);
 
-  const unread = notifs.filter((n) => !n.read).length;
+  useEffect(() => {
+    api.getNotifications().then((data) => {
+      setNotifs(data.notifications);
+      setUnread(data.unread);
+      setLoading(false);
+    });
+  }, []);
 
-  const markAllRead = () => setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+  const markRead = async (id: number) => {
+    await api.markRead(id);
+    setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+    setUnread((prev) => Math.max(0, prev - 1));
+  };
+
+  const markAllRead = async () => {
+    await api.markAllRead();
+    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnread(0);
+  };
 
   return (
     <div className="min-h-screen px-4 md:px-6 py-8">
       <div className="container max-w-4xl mx-auto">
-        {/* Header */}
         <div className="flex items-start justify-between mb-8 animate-fade-in">
           <div>
             <p className="text-primary text-sm font-medium uppercase tracking-widest mb-1">Система</p>
@@ -74,13 +77,13 @@ export default function NotificationsPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           {[
-            { label: "Отправлено сегодня", value: "24", icon: "Send", color: "text-primary" },
+            { label: "Всего уведомлений", value: String(notifs.length), icon: "Send", color: "text-primary" },
             { label: "Не прочитано", value: String(unread), icon: "Bell", color: "text-yellow-400" },
-            { label: "Доставлено", value: "98.5%", icon: "TrendingUp", color: "text-emerald-400" },
+            { label: "Прочитано", value: String(notifs.filter((n) => n.read).length), icon: "CheckCheck", color: "text-emerald-400" },
           ].map((s) => (
             <div key={s.label} className="gradient-card border border-border rounded-2xl p-4">
               <Icon name={s.icon as "Send"} size={18} className={`${s.color} mb-2`} />
-              <div className="text-2xl font-bold">{s.value}</div>
+              <div className="text-2xl font-bold">{loading ? "—" : s.value}</div>
               <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
             </div>
           ))}
@@ -93,10 +96,7 @@ export default function NotificationsPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200
-                ${activeTab === tab
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-                }`}
+                ${activeTab === tab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               {tab === "feed" ? "Лента" : "Шаблоны"}
             </button>
@@ -106,28 +106,35 @@ export default function NotificationsPage() {
         {/* Feed */}
         {activeTab === "feed" && (
           <div className="space-y-2 animate-scale-in">
-            {notifs.map((n) => {
+            {loading ? (
+              [1, 2, 3].map((i) => <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />)
+            ) : notifs.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Icon name="Bell" size={40} className="mx-auto mb-3 opacity-30" />
+                <p>Уведомлений пока нет</p>
+              </div>
+            ) : notifs.map((n) => {
               const { icon, color } = typeIcons[n.type] || { icon: "Bell", color: "text-primary" };
               return (
                 <div
                   key={n.id}
-                  onClick={() => setNotifs((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x))}
+                  onClick={() => !n.read && markRead(n.id)}
                   className={`flex items-start gap-4 p-4 rounded-2xl border transition-all duration-200 cursor-pointer
                     ${!n.read
-                      ? 'border-primary/25 bg-primary/5 hover:bg-primary/8'
-                      : 'border-border gradient-card hover:border-primary/15'
+                      ? "border-primary/25 bg-primary/5 hover:bg-primary/8"
+                      : "border-border gradient-card hover:border-primary/15"
                     }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${!n.read ? 'bg-primary/15' : 'bg-muted'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${!n.read ? "bg-primary/15" : "bg-muted"}`}>
                     <Icon name={icon as "Bell"} size={18} className={color} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`font-medium text-sm ${!n.read ? 'text-foreground' : 'text-foreground/80'}`}>
+                      <p className={`font-medium text-sm ${!n.read ? "text-foreground" : "text-foreground/80"}`}>
                         {n.title}
                         {!n.read && <span className="inline-block w-2 h-2 rounded-full bg-primary ml-2 align-middle" />}
                       </p>
-                      <span className="text-xs text-muted-foreground shrink-0">{n.time}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{formatTime(n.time)}</span>
                     </div>
                     <p className="text-muted-foreground text-sm mt-0.5 leading-relaxed">{n.message}</p>
                     <div className="flex items-center gap-1.5 mt-2">
@@ -150,18 +157,15 @@ export default function NotificationsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <p className="font-semibold">{t.name}</p>
-                    <span className="status-badge text-xs bg-muted text-muted-foreground border-border">
-                      {t.channel}
-                    </span>
+                    <span className="status-badge text-xs bg-muted text-muted-foreground border-border">{t.channel}</span>
                   </div>
                   <p className="text-muted-foreground text-sm">{t.desc}</p>
                 </div>
                 <button
                   onClick={() => setTmpl((prev) => prev.map((x, j) => j === i ? { ...x, active: !x.active } : x))}
-                  className={`relative w-12 h-6 rounded-full transition-all duration-200 shrink-0
-                    ${t.active ? 'gradient-primary' : 'bg-muted'}`}
+                  className={`relative w-12 h-6 rounded-full transition-all duration-200 shrink-0 ${t.active ? "gradient-primary" : "bg-muted"}`}
                 >
-                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${t.active ? 'left-7' : 'left-1'}`} />
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${t.active ? "left-7" : "left-1"}`} />
                 </button>
               </div>
             ))}
