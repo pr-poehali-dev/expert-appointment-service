@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Получить список новостей",
+      "method": "GET",
+      "path": "/?action=list",
+      "expectedStatus": 200,
+      "expectedBody": {"news": []},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

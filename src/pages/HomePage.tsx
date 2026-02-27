@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react";
 import Icon from "@/components/ui/icon";
 import { api, Specialist } from "@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const NEWS_URL = "https://functions.poehali.dev/a3d05dc7-ed7c-40cb-9f88-abc812c5d673";
+
+interface NewsItem {
+  id: number;
+  title: string;
+  preview: string;
+  published_at: string;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+}
 
 const stats = [
   { value: "2 400+", label: "Пациентов", icon: "Users" },
@@ -16,18 +30,43 @@ interface HomePageProps {
 export default function HomePage({ onBook }: HomePageProps) {
   const [specialists, setSpecialists] = useState<Specialist[]>([]);
   const [loading, setLoading] = useState(true);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loadingNews, setLoadingNews] = useState(true);
 
   useEffect(() => {
     api.getSpecialists().then((data) => {
       setSpecialists(data);
       setLoading(false);
     });
+    fetch(`${NEWS_URL}/?action=list`)
+      .then((r) => r.json())
+      .then((d) => setNews(d.news || []))
+      .finally(() => setLoadingNews(false));
   }, []);
 
   const availableCount = specialists.filter((s) => s.available).length;
 
   return (
     <div className="min-h-screen">
+      {/* Nav */}
+      <nav className="sticky top-0 z-50 border-b border-border/50" style={{ background: "hsla(220,20%,7%,0.9)", backdropFilter: "blur(20px)" }}>
+        <div className="container max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+              <Icon name="Stethoscope" size={16} className="text-primary-foreground" />
+            </div>
+            <span className="font-cormorant font-semibold text-base">МедиКлиник</span>
+          </div>
+          <button
+            onClick={onBook}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
+          >
+            <Icon name="LogIn" size={15} />
+            Войти
+          </button>
+        </div>
+      </nav>
+
       <section className="gradient-hero relative overflow-hidden px-6 py-20 md:py-32">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
@@ -157,6 +196,47 @@ export default function HomePage({ onBook }: HomePageProps) {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* News */}
+      <section className="px-6 py-16">
+        <div className="container max-w-5xl mx-auto">
+          <div className="mb-8">
+            <p className="text-primary text-sm font-medium uppercase tracking-widest mb-2">Актуально</p>
+            <h2 className="text-3xl md:text-4xl font-cormorant font-semibold">Новости</h2>
+          </div>
+          {loadingNews ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="gradient-card border border-border rounded-2xl p-5 animate-pulse">
+                  <div className="h-4 bg-muted rounded mb-3 w-3/4" />
+                  <div className="h-3 bg-muted rounded mb-2 w-full" />
+                  <div className="h-3 bg-muted rounded w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : news.length === 0 ? (
+            <p className="text-muted-foreground">Новостей пока нет</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {news.map((item) => (
+                <Card key={item.id} className="gradient-card card-hover cursor-pointer">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-base leading-tight">{item.title}</CardTitle>
+                      <span className="text-xs text-muted-foreground shrink-0 mt-0.5">
+                        {formatDate(item.published_at)}
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-muted-foreground">{item.preview}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>

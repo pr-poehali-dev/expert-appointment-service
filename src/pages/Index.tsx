@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import AuthPage from "@/pages/AuthPage";
 import ClientPortal from "@/pages/ClientPortal";
 import AdminPanel from "@/pages/AdminPanel";
+import HomePage from "@/pages/HomePage";
 import Icon from "@/components/ui/icon";
 
 export default function Index() {
   const { user, loading } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
 
   if (loading) {
     return (
@@ -20,7 +23,8 @@ export default function Index() {
     );
   }
 
-  if (!user) return <AuthPage />;
-  if (user.role === "doctor") return <AdminPanel />;
-  return <ClientPortal />;
+  if (user?.role === "doctor") return <AdminPanel />;
+  if (user) return <ClientPortal />;
+  if (showAuth) return <AuthPage />;
+  return <HomePage onBook={() => setShowAuth(true)} />;
 }
