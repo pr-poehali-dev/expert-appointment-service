@@ -1,11 +1,62 @@
 {
   "tests": [
     {
-      "name": "Записи на сегодня",
+      "name": "GET записи на сегодня",
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": {"appointments": []},
+      "expectedBody": {"appointments": [{"id": 1}]},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET несуществующая запись",
+      "method": "GET",
+      "path": "/?id=99999",
+      "expectedStatus": 404,
+      "expectedBody": {"error": "Запись не найдена"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET неверный формат даты",
+      "method": "GET",
+      "path": "/?date=bad-date",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Неверный формат даты. Ожидается YYYY-MM-DD"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST без обязательных полей",
+      "method": "POST",
+      "path": "/",
+      "body": "{}",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Отсутствуют обязательные поля: specialist_id, patient_name, patient_phone, date, time"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST несуществующий специалист",
+      "method": "POST",
+      "path": "/",
+      "body": "{\"specialist_id\": 99999, \"patient_name\": \"Тест\", \"patient_phone\": \"+7000\", \"date\": \"2026-12-01\", \"time\": \"09:00\"}",
+      "expectedStatus": 404,
+      "expectedBody": {"error": "Специалист не найден"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "PUT несуществующая запись",
+      "method": "PUT",
+      "path": "/?id=99999",
+      "body": "{\"status\": \"confirmed\"}",
+      "expectedStatus": 404,
+      "expectedBody": {"error": "Запись не найдена"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "PUT неверный статус",
+      "method": "PUT",
+      "path": "/?id=1",
+      "body": "{\"status\": \"invalid_status\"}",
+      "expectedStatus": 400,
       "bodyMatcher": "partial"
     }
   ]

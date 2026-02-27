@@ -1,11 +1,36 @@
 {
   "tests": [
     {
-      "name": "Список специалистов",
+      "name": "GET список специалистов",
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": {"specialists": []},
+      "expectedBody": {"specialists": [{"id": 1}]},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET несуществующий специалист",
+      "method": "GET",
+      "path": "/?specialist_id=99999",
+      "expectedStatus": 404,
+      "expectedBody": {"error": "Специалист не найден"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET неверная дата",
+      "method": "GET",
+      "path": "/?specialist_id=1&date=not-a-date",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Неверный формат даты. Ожидается YYYY-MM-DD"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST без обязательных полей",
+      "method": "POST",
+      "path": "/",
+      "body": "{}",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Отсутствуют обязательные поля: name, specialty, price"},
       "bodyMatcher": "partial"
     }
   ]

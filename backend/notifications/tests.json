@@ -1,11 +1,51 @@
 {
   "tests": [
     {
-      "name": "Список уведомлений",
+      "name": "GET список уведомлений",
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": {"notifications": [], "unread": 0},
+      "expectedBody": {"notifications": [{"id": 1}]},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "GET только непрочитанные",
+      "method": "GET",
+      "path": "/?unread=true",
+      "expectedStatus": 200,
+      "expectedBody": {"notifications": []},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST read без id",
+      "method": "POST",
+      "path": "/?action=read",
+      "expectedStatus": 400,
+      "expectedBody": {"error": "Параметр id обязателен"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST read несуществующее",
+      "method": "POST",
+      "path": "/?action=read&id=99999",
+      "expectedStatus": 404,
+      "expectedBody": {"error": "Уведомление не найдено"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST обработка очереди событий",
+      "method": "POST",
+      "path": "/?action=process_events",
+      "expectedStatus": 200,
+      "expectedBody": {"processed": 0},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST read_all",
+      "method": "POST",
+      "path": "/?action=read_all",
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
       "bodyMatcher": "partial"
     }
   ]
